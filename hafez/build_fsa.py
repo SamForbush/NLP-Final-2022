@@ -67,32 +67,34 @@ def build_fsa(pattern, vocab, stress_to_words):
     return transitions
 
 
-toklines = file_to_tokens('../test_poem.txt')
-vocab = build_vocab(toklines)
+def corpus_to_fsa(corpus_fpath, target_pattern):
+    toklines = file_to_tokens(corpus_fpath)
+    vocab = build_vocab(toklines)
 
+    # build dict of stress pattern to sets of words w/ that stress pattern
+    stress_to_words = dict()
+    with open('stresses.txt', 'r') as fp:
+        lines = fp.readlines()
+        for line in lines:
+            pair = line.rstrip().split(',')
+            word, stress = pair[0], pair[1]
+            if word not in vocab: continue
+            if stress not in stress_to_words.keys():
+                stress_to_words[stress] = { word }
+            else:
+                stress_to_words[stress].add(word)
 
-# build dict of stress pattern to sets of words w/ that stress pattern
-stress_to_words = dict()
-with open('stresses.txt', 'r') as fp:
-    lines = fp.readlines()
-    for line in lines:
-        pair = line.rstrip().split(',')
-        word, stress = pair[0], pair[1]
-        if word not in vocab: continue
-        if stress not in stress_to_words.keys():
-            stress_to_words[stress] = { word }
-        else:
-            stress_to_words[stress].add(word)
+    #pprint(stress_to_words)
+    #combs = get_stress_combinations('01010101', stress_to_words)
+    #pprint(combs)
 
-pprint(stress_to_words)
-#combs = get_stress_combinations('01010101', stress_to_words)
-#pprint(combs)
+    fsa = build_fsa(target_pattern, vocab, stress_to_words)
+    #pprint(fsa)
 
-fsa = build_fsa('01010101', vocab, stress_to_words)
-#pprint(fsa)
+    # write fsa to file
+    with open('fsa.txt', 'w') as fp:
+        for word, curr, next in fsa:
+            fp.write(f'{word},{curr},{next}\n')
 
-# write fsa to file
-with open('fsa.txt', 'w') as fp:
-    for word, curr, next in fsa:
-        fp.write(f'{word},{curr},{next}\n')
+corpus_to_fsa('../test_poem.txt', '01010101')
 
