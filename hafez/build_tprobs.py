@@ -30,7 +30,7 @@ def build_tprobs(corpus_fpath):
     #pprint(tdict)
     # write to file
     with open('transition_probs.json', 'w') as fp:
-        json.dump(tdict, fp)
+        json.dump(tdict, fp, indent=2)
 
 
 build_tprobs('../test_poem.txt')
