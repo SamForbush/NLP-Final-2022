@@ -11,6 +11,13 @@ def build_tprobs(corpus_fpath):
     # key is word, value is dictionary of preceding words
     vocab = build_vocab(toklines)
     tdict = { word:dict() for word in vocab }
+    tdict['END'] = dict()
+
+    # probability P( word | START )
+    # probability P( END  | word  )
+    for line in toklines:
+        tdict[line[0]]['START'] = 1
+        tdict['END'][line[-1]] = 1
 
     # populate tdict
     for line in toklines:
