@@ -38,7 +38,7 @@ def get_tprob(a, b, tprobs, oov):
 def get_top_3(d):
     s = sorted(list(d.items()), key=lambda i:i[1])
     #print(sorted(d.items(), key=lambda i:i[1]))
-    print(s[-3:])
+    #print(s[-3:])
     return dict(s[-3:])
 
 
@@ -108,6 +108,18 @@ def beam_search(num_states, fsa_fpath, tprob_fpath):
 
         #print('\n')
     pprint(backptrs)
+    return backptrs
+
+
+def decode(backptrs, num_states):
+    final_state = str(num_states)
+
+    # recover final transition
+    last_t = ('_', '-1')
+    best_prob = 0
+    for t in backptrs.keys():
+        if t[1] == final_state:
+            best = pick_max(backptrs[t])
 
 beam_search(8, 'fsa.txt', 'transition_probs.json')
 #print(get_transitions('fsa.txt'))
