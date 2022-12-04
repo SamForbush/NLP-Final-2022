@@ -9,5 +9,5 @@ def hafez(corpus_fpath, stress_pattern, num_lines, num_states):
     generate(num_lines, num_states)
 
 
-hafez('../fall2016.txt', '01010101', 4, 8)
+hafez('../StylusPoems1977,2015,2022.csv' , '01010101', 8, 8)
 

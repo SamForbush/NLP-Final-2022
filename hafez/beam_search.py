@@ -1,6 +1,7 @@
 # beam search
 
 import json
+from random import randint
 from pprint import pprint
 
 
@@ -36,11 +37,18 @@ def get_tprob(a, b, tprobs, oov):
 
 
 # given dictionary {str : float}, return top 3
-def get_top_3(d):
-    s = sorted(list(d.items()), key=lambda i:i[1])
-    #print(sorted(d.items(), key=lambda i:i[1]))
-    #print(s[-3:])
-    return dict(s[-3:])
+def get_top_3(d, used):
+    top_3 = dict()
+    s = sorted(list(d.items()), key=lambda i:i[1], reverse=True)
+
+    count = 0
+    for word, prob in s:
+        if word not in used and randint(0, 10) > 3:
+            top_3[word] = prob
+            count += 1
+        if count == 3: break
+
+    return top_3
 
 
 # given current top paths and candidates, compute new top paths
@@ -51,19 +59,15 @@ def get_new_top_paths(top_paths, candidates, t, tprobs, oov, used):
             prob = path_prob * get_tprob(cand, path, tprobs, oov)
 
             # penalty for repeated words
-            if cand in used.keys():
-                used[cand] *= 0.1
-                prob *= used[cand]
+            if cand in used:
+                #used[cand] *= 0.1
+                prob *= 0.01
 
             new_paths[cand] = prob
             #print(f'P({cand}|{path}) = {prob}')
 
     # eliminate all but top 3
-    top_3 = get_top_3(new_paths)
-    for word in top_3.keys():
-        if word not in used.keys():
-            used[word] = 0.1
-    #print(len(top_3.keys()))
+    top_3 = get_top_3(new_paths, used)
     return top_3
 
 
@@ -117,18 +121,18 @@ def beam_search(num_states, fsa_fpath, tprob_fpath, used):
     return backptrs
 
 
-def decode(backptrs, num_states):
+def decode(backptrs, num_states, dupl):
     final_state = str(num_states)
     line = []
-    dupl = set()
+    #dupl = set()
 
     # recover final transition
     last_t = ('_', '-1')
     best_pair = ('_', 0)
-    for t in backptrs.keys():
+    for t in reversed(backptrs.keys()):
         if t[1] == final_state:
             for word, prob in backptrs[t].items():
-                if prob > best_pair[1]:
+                if prob > best_pair[1] and word not in dupl:
                     best_pair = (word, prob)
                     last_t = t
     line.append(best_pair[0])
@@ -146,7 +150,7 @@ def decode(backptrs, num_states):
             break
 
         # compute new best
-        for t in prevs:
+        for t in reversed(prevs):
             for word, prob in backptrs[t].items():
                 if prob > best_pair[1] and word not in dupl:
                     best_pair = (word, prob)
@@ -161,13 +165,13 @@ def decode(backptrs, num_states):
 
 
 def generate(num_lines, num_states):
-    used = dict()
+    used, dupl = set(), set()
     for _ in range(num_lines):
         backptrs = beam_search(num_states, 'fsa.txt', 'transition_probs.json', used)
-        line = decode(backptrs, num_states)
-        print(backptrs)
+        #pprint(backptrs)
+        line = decode(backptrs, num_states, dupl)
         backptrs.clear()
         print(line)
 
-generate(4, 8)
+#generate(5, 8)
 
