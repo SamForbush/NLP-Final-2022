@@ -1,9 +1,13 @@
 # beam search
 
 import json
+import cmudict
 from random import randint
 from pprint import pprint
 
+
+VOWEL_INDICES = {'0', '1', '2'}
+PDICT = cmudict.dict()
 
 # read in fsa and create dictionary mapping
 # dict : (current state, next state) -> set of words
@@ -36,6 +40,25 @@ def get_tprob(a, b, tprobs, oov):
         return oov
 
 
+def is_vowel(phone):
+    return phone[-1] in VOWEL_INDICES
+
+
+# given word, compute penalty based on length of syllables
+def length_penalty(word):
+    phonemes = PDICT[word]
+    if len(phonemes) == 0: return 1
+
+    # count syllables
+    count = 0
+    for phone in phonemes:
+        if is_vowel(phone):
+            count += 1
+
+    # compute penalty
+    return 0.1 ** count
+
+
 # given dictionary {str : float}, return top 3
 def get_top_3(d, used):
     top_3 = dict()
@@ -62,6 +85,8 @@ def get_new_top_paths(top_paths, candidates, t, tprobs, oov, used):
             if cand in used:
                 #used[cand] *= 0.1
                 prob *= 0.01
+
+            prob *= length_penalty(cand)
 
             new_paths[cand] = prob
             #print(f'P({cand}|{path}) = {prob}')
@@ -173,5 +198,5 @@ def generate(num_lines, num_states):
         backptrs.clear()
         print(line)
 
-#generate(5, 8)
+generate(5, 8)
 
