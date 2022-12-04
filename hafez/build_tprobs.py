@@ -16,11 +16,13 @@ def build_tprobs(corpus_fpath):
     # probability P( word | START )
     # probability P( END  | word  )
     for line in toklines:
+        if len(line) < 2: continue
         tdict[line[0]]['START'] = 1
         tdict['END'][line[-1]] = 1
 
     # populate tdict
     for line in toklines:
+        if len(line) < 2: continue
         for idx, word in enumerate(line[1:]):
             prev = line[idx]
             if prev in tdict[word]:
@@ -40,4 +42,4 @@ def build_tprobs(corpus_fpath):
         json.dump(tdict, fp, indent=2)
 
 
-build_tprobs('../test_poem.txt')
+#build_tprobs('../test_poem.txt')

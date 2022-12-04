@@ -18,6 +18,7 @@ def get_transitions(fsa_fpath):
     return transitions
 
 
+# retrieve transitions leading up to current
 def retrieve_last(backptrs, curr):
     ts = []
     for t in backptrs.keys():
@@ -43,20 +44,31 @@ def get_top_3(d):
 
 
 # given current top paths and candidates, compute new top paths
-def get_new_top_paths(top_paths, candidates, t, tprobs, oov):
+def get_new_top_paths(top_paths, candidates, t, tprobs, oov, used):
     new_paths = dict()
     for path, path_prob in top_paths.items():
         for cand in candidates[t]:
             prob = path_prob * get_tprob(cand, path, tprobs, oov)
+
+            # penalty for repeated words
+            if cand in used.keys():
+                used[cand] *= 0.1
+                prob *= used[cand]
+
             new_paths[cand] = prob
             #print(f'P({cand}|{path}) = {prob}')
 
     # eliminate all but top 3
-    return get_top_3(new_paths)
+    top_3 = get_top_3(new_paths)
+    for word in top_3.keys():
+        if word not in used.keys():
+            used[word] = 0.1
+    #print(len(top_3.keys()))
+    return top_3
 
 
 # perform beam search
-def beam_search(num_states, fsa_fpath, tprob_fpath):
+def beam_search(num_states, fsa_fpath, tprob_fpath, used):
     # read fsa
     transitions = get_transitions(fsa_fpath)
 
@@ -69,7 +81,6 @@ def beam_search(num_states, fsa_fpath, tprob_fpath):
     backptrs = { key:dict() for key in transitions.keys() }
 
     oov_prob = 0.00001
-    # TODO populate backpointers for initial state
     for t in transitions.keys():
         if t[0] == '0':
             for word in transitions[t]:
@@ -93,34 +104,70 @@ def beam_search(num_states, fsa_fpath, tprob_fpath):
         for t in candidates.keys():
             # get previous transitions
             prevs = retrieve_last(backptrs, t[0])
-            #print(t, prevs, candidates[t])
 
             # retrieve top paths up to current point
             for prev in prevs:
                 top_paths = backptrs[prev]
-                #print('top paths: ', end='')
-                #pprint(top_paths)
 
                 # compute P( candidates[t] | word in top_paths )
-                new = get_new_top_paths(top_paths, candidates, t, tprobs, oov_prob)
+                new = get_new_top_paths(top_paths, candidates, t, tprobs, oov_prob, used)
                 backptrs[t] = new
-                #print(new)
 
-        #print('\n')
-    pprint(backptrs)
+    #pprint(backptrs)
     return backptrs
 
 
 def decode(backptrs, num_states):
     final_state = str(num_states)
+    line = []
+    dupl = set()
 
     # recover final transition
     last_t = ('_', '-1')
-    best_prob = 0
+    best_pair = ('_', 0)
     for t in backptrs.keys():
         if t[1] == final_state:
-            best = pick_max(backptrs[t])
+            for word, prob in backptrs[t].items():
+                if prob > best_pair[1]:
+                    best_pair = (word, prob)
+                    last_t = t
+    line.append(best_pair[0])
+    dupl.add(best_pair[0])
+    #print(best_pair, last_t)
 
-beam_search(8, 'fsa.txt', 'transition_probs.json')
-#print(get_transitions('fsa.txt'))
+
+    # recover rest of transitions
+    for i in range(num_states):
+        best_pair = ('_', 0)
+
+        # get previous transitions
+        prevs = retrieve_last(backptrs, last_t[0])
+        if len(prevs) == 0:
+            break
+
+        # compute new best
+        for t in prevs:
+            for word, prob in backptrs[t].items():
+                if prob > best_pair[1] and word not in dupl:
+                    best_pair = (word, prob)
+                    last_t = t
+        dupl.add(best_pair[0])
+        #print(best_pair, last_t)
+
+        # add to output
+        line.append(best_pair[0])
+
+    return ' '.join(reversed(line))
+
+
+def generate(num_lines, num_states):
+    used = dict()
+    for _ in range(num_lines):
+        backptrs = beam_search(num_states, 'fsa.txt', 'transition_probs.json', used)
+        line = decode(backptrs, num_states)
+        print(backptrs)
+        backptrs.clear()
+        print(line)
+
+generate(4, 8)
 

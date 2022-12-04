@@ -96,5 +96,5 @@ def corpus_to_fsa(corpus_fpath, target_pattern):
         for word, curr, next in fsa:
             fp.write(f'{word},{curr},{next}\n')
 
-corpus_to_fsa('../test_poem.txt', '01010101')
+#corpus_to_fsa('../test_poem.txt', '01010101')
 
