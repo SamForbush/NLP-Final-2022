@@ -153,7 +153,7 @@ def decode(backptrs, num_states, dupl):
 
     # recover final transition
     last_t = ('_', '-1')
-    best_pair = ('_', 0)
+    best_pair = ('_', -1)
     for t in reversed(backptrs.keys()):
         if t[1] == final_state:
             for word, prob in backptrs[t].items():
@@ -167,7 +167,7 @@ def decode(backptrs, num_states, dupl):
 
     # recover rest of transitions
     for i in range(num_states):
-        best_pair = ('_', 0)
+        best_pair = ('_', -1)
 
         # get previous transitions
         prevs = retrieve_last(backptrs, last_t[0])
