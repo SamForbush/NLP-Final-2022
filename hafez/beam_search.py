@@ -198,5 +198,5 @@ def generate(num_lines, num_states):
         backptrs.clear()
         print(line)
 
-generate(5, 8)
+generate(8, 8)
 
